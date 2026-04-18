@@ -72,10 +72,7 @@
         max(env(safe-area-inset-left, 0px), clamp(0.85rem, 3.5vw, 1.75rem));
       max-width: 46rem;
       margin: 0 auto;
-      animation: shellIn 0.55s var(--ease) both;
-    }
-    @keyframes shellIn {
-      from { opacity: 0; transform: translateY(8px); }
+      animation: fadeUp 0.55s var(--ease) both;
     }
     .hero {
       display: flex;
@@ -171,7 +168,7 @@
     .chord-strip {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: clamp(0.4rem, 1.8vw, 0.65rem);
+      gap: clamp(0.48rem, 2vw, 0.75rem);
       width: 100%;
       opacity: 0;
       animation: fadeUp 0.55s var(--ease) 0.18s forwards;
@@ -186,7 +183,7 @@
         justify-content: flex-start;
       }
     }
-    /** 竖屏窄屏：仍保持一排 7 格等宽，略缩间距与字号以免溢出 */
+    /** 竖屏窄屏：一排 7 格等宽；间距与桌面同一套 clamp，不额外压窄 */
     @media (max-width: 520px) and (orientation: portrait) {
       .shell {
         justify-content: flex-start;
@@ -201,26 +198,25 @@
         line-height: 1.2;
       }
       .chord-strip {
-        grid-template-columns: repeat(7, minmax(0, 1fr));
-        gap: 0.28rem;
+        gap: clamp(0.42rem, 1.85vw, 0.68rem);
       }
       .chord-key {
-        min-height: clamp(5.5rem, 22vw, 6.75rem);
-        padding: 0.55rem 0.22rem 0.5rem;
-        padding-left: 0.38rem;
-        border-radius: 11px;
+        min-height: clamp(6.25rem, 24vw, 7.75rem);
+        padding: 0.72rem 0.32rem 0.65rem;
+        padding-left: 0.48rem;
+        border-radius: 12px;
       }
       .chord-key::before {
-        left: 4px;
-        width: 2.5px;
+        left: 5px;
+        width: 3px;
       }
-      .chord-key__name {
-        font-size: clamp(0.72rem, 2.9vw, 0.95rem);
+      .chord-key__roman {
+        font-size: clamp(0.54rem, 2vw, 0.64rem);
+        line-height: 1.3;
       }
-      .chord-key__deg {
-        font-size: clamp(0.48rem, 2.1vw, 0.58rem);
-        margin-top: 0.28rem;
-        line-height: 1.25;
+      .chord-key__label {
+        font-size: clamp(0.78rem, 3.2vw, 0.98rem);
+        margin-top: 0.38rem;
       }
     }
     .chord-key {
@@ -235,9 +231,9 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: clamp(7.5rem, 22vw, 9.5rem);
-      padding: 0.85rem 0.4rem 0.75rem;
-      padding-left: 0.55rem;
+      min-height: clamp(7.75rem, 22vw, 9.75rem);
+      padding: 0.9rem 0.45rem 0.8rem;
+      padding-left: 0.58rem;
       border: 1px solid var(--border);
       border-radius: 14px;
       cursor: pointer;
@@ -289,26 +285,28 @@
       -webkit-user-select: none;
       user-select: none;
     }
-    .chord-key__name {
-      font-size: clamp(0.95rem, 2.8vw, 1.15rem);
-      font-weight: 650;
-      letter-spacing: -0.02em;
-      color: var(--text);
-      line-height: 1.1;
-    }
-    .chord-key__deg {
-      margin-top: 0.4rem;
+    /** 第一行：罗马级数 · 结构；第二行：和弦名 */
+    .chord-key__roman {
       font-family: "JetBrains Mono", ui-monospace, monospace;
-      font-size: clamp(0.58rem, 1.8vw, 0.68rem);
+      font-size: clamp(0.6rem, 1.85vw, 0.72rem);
       font-weight: 500;
       color: var(--muted);
       text-align: center;
       line-height: 1.35;
       max-width: 100%;
     }
-    .chord-key__deg span.roman-h {
+    .chord-key__roman span.roman-h {
       color: var(--stripe);
       opacity: 0.95;
+    }
+    .chord-key__label {
+      margin-top: 0.45rem;
+      font-size: clamp(0.95rem, 2.8vw, 1.15rem);
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      line-height: 1.12;
+      text-align: center;
     }
     @media (prefers-reduced-motion: reduce) {
       .bg-scene::before,
@@ -402,6 +400,10 @@
       return p;
     }
 
+    function chordSampleBases(midiNotes) {
+      return [...new Set(midiNotes.map(nearestPianoSampleMidi))];
+    }
+
     const ROMAN = [
       "I — 大三",
       "ii — 小三",
@@ -453,11 +455,7 @@
     const SYNTH_LEVEL = 1.28;
 
     function collectSampleBasesForTonic(tonicMidi) {
-      const s = new Set();
-      voicedTriadsForKey(tonicMidi).forEach((triad) => {
-        triad.forEach((m) => s.add(nearestPianoSampleMidi(m)));
-      });
-      return Array.from(s);
+      return chordSampleBases(voicedTriadsForKey(tonicMidi).flat());
     }
 
     function preloadPianoForTonic(tonicMidi) {
@@ -472,10 +470,41 @@
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      if (audioCtx.state === "suspended") {
-        audioCtx.resume();
-      }
       return audioCtx;
+    }
+
+    /** iOS 等：须 await resume 后再调度节点，否则易偶发无声 */
+    function whenContextReady(ctx) {
+      if (!ctx || ctx.state === "closed" || ctx.state === "running") return Promise.resolve();
+      return ctx.resume().catch(() => {});
+    }
+
+    function whenReadyAndSamples(ctx, midiNotes) {
+      return Promise.all([
+        whenContextReady(ctx),
+        ...chordSampleBases(midiNotes).map((b) => loadPianoBuffer(ctx, b)),
+      ]);
+    }
+
+    function playbackRateSemi(midi, baseMidi) {
+      return Math.pow(2, (midi - baseMidi) / 12);
+    }
+
+    function disconnectGainLater(master, ms) {
+      setTimeout(() => {
+        try {
+          master.disconnect();
+        } catch (_) {}
+      }, ms);
+    }
+
+    function fadeMasterOut(master, ctx, fadeSec) {
+      const t = ctx.currentTime;
+      try {
+        master.gain.cancelScheduledValues(t);
+        master.gain.setValueAtTime(Math.max(1e-4, master.gain.value), t);
+        master.gain.exponentialRampToValueAtTime(0.001, t + fadeSec);
+      } catch (_) {}
     }
 
     function playChordSynth(midiNotes, opts = {}) {
@@ -483,39 +512,37 @@
       const destination = opts.destination;
       const gainScale = opts.gainScale ?? 1;
       const ctx = getCtx();
-      const master = ctx.createGain();
-      master.gain.value = 0;
-      master.connect(destination || ctx.destination);
+      whenContextReady(ctx).then(() => {
+        const master = ctx.createGain();
+        master.gain.value = 0;
+        master.connect(destination || ctx.destination);
 
-      const now = ctx.currentTime;
-      const attack = 0.018;
-      const peak = 0.22 * gainScale * SYNTH_LEVEL;
+        const now = ctx.currentTime + 0.002;
+        const attack = 0.018;
+        const peak = 0.22 * gainScale * SYNTH_LEVEL;
 
-      master.gain.setValueAtTime(0, now);
-      master.gain.linearRampToValueAtTime(peak, now + attack);
-      master.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+        master.gain.setValueAtTime(0, now);
+        master.gain.linearRampToValueAtTime(peak, now + attack);
+        master.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
 
-      midiNotes.forEach((midi, i) => {
-        const detuneCents = (i - 1) * 3;
-        const osc = ctx.createOscillator();
-        osc.type = "triangle";
-        osc.frequency.value = midiToHz(midi);
-        osc.detune.value = detuneCents;
+        midiNotes.forEach((midi, i) => {
+          const detuneCents = (i - 1) * 3;
+          const osc = ctx.createOscillator();
+          osc.type = "triangle";
+          osc.frequency.value = midiToHz(midi);
+          osc.detune.value = detuneCents;
 
-        const voiceGain = ctx.createGain();
-        voiceGain.gain.value = 0.42 * gainScale * SYNTH_LEVEL;
+          const voiceGain = ctx.createGain();
+          voiceGain.gain.value = 0.42 * gainScale * SYNTH_LEVEL;
 
-        osc.connect(voiceGain);
-        voiceGain.connect(master);
-        osc.start(now);
-        osc.stop(now + durationSec + 0.05);
+          osc.connect(voiceGain);
+          voiceGain.connect(master);
+          osc.start(now);
+          osc.stop(now + durationSec + 0.05);
+        });
+
+        disconnectGainLater(master, (durationSec + 0.2) * 1000);
       });
-
-      setTimeout(() => {
-        try {
-          master.disconnect();
-        } catch (_) {}
-      }, (durationSec + 0.2) * 1000);
     }
 
     function playChord(midiNotes, opts = {}) {
@@ -523,14 +550,16 @@
       const destination = opts.destination;
       const gainScale = opts.gainScale ?? 1;
       const ctx = getCtx();
-      const bases = [...new Set(midiNotes.map(nearestPianoSampleMidi))];
-      Promise.all(bases.map((b) => loadPianoBuffer(ctx, b)))
+      const synthFallback = () =>
+        playChordSynth(midiNotes, { durationSec, destination, gainScale });
+
+      whenReadyAndSamples(ctx, midiNotes)
         .then(() => {
           const master = ctx.createGain();
           master.gain.value = 0;
           master.connect(destination || ctx.destination);
 
-          const now = ctx.currentTime + 0.004;
+          const now = ctx.currentTime + 0.008;
           const attack = 0.008;
           const peak = 0.62 * gainScale * PIANO_LEVEL;
 
@@ -538,6 +567,7 @@
           master.gain.linearRampToValueAtTime(peak, now + attack);
           master.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
 
+          let started = 0;
           midiNotes.forEach((midi, i) => {
             const base = nearestPianoSampleMidi(midi);
             const buf = pianoBufferCache.get(base);
@@ -545,8 +575,7 @@
 
             const src = ctx.createBufferSource();
             src.buffer = buf;
-            const rate = Math.pow(2, (midi - base) / 12);
-            src.playbackRate.value = rate;
+            src.playbackRate.value = playbackRateSemi(midi, base);
 
             const voiceGain = ctx.createGain();
             voiceGain.gain.value = (0.62 - i * 0.045) * gainScale * PIANO_LEVEL;
@@ -554,64 +583,61 @@
             src.connect(voiceGain);
             voiceGain.connect(master);
 
-            const bufSec = buf.duration / rate;
+            const bufSec = buf.duration / src.playbackRate.value;
             const stopAt = now + Math.min(bufSec, durationSec + 0.25);
             src.start(now);
             src.stop(stopAt);
+            started += 1;
           });
 
-          setTimeout(() => {
+          if (started === 0) {
             try {
               master.disconnect();
             } catch (_) {}
-          }, (durationSec + 0.45) * 1000);
+            synthFallback();
+            return;
+          }
+
+          disconnectGainLater(master, (durationSec + 0.45) * 1000);
         })
-        .catch(() => {
-          playChordSynth(midiNotes, { durationSec, destination, gainScale });
-        });
+        .catch(synthFallback);
     }
 
     function playChordSynthHold(midiNotes, opts = {}) {
       const ctx = getCtx();
       const destination = opts.destination || ctx.destination;
       const gainScale = opts.gainScale ?? 1;
-      const master = ctx.createGain();
-      master.gain.value = 0;
-      master.connect(destination);
-      const now = ctx.currentTime + 0.002;
-      master.gain.linearRampToValueAtTime(0.17 * gainScale * SYNTH_LEVEL, now + 0.014);
-      const oscs = [];
-      midiNotes.forEach((midi) => {
-        const o = ctx.createOscillator();
-        o.type = "triangle";
-        o.frequency.value = midiToHz(midi);
-        const g = ctx.createGain();
-        g.gain.value = 0.38 * gainScale * SYNTH_LEVEL;
-        o.connect(g);
-        g.connect(master);
-        o.start(now);
-        oscs.push(o);
+      return whenContextReady(ctx).then(() => {
+        const master = ctx.createGain();
+        master.gain.value = 0;
+        master.connect(destination);
+        const now = ctx.currentTime + 0.004;
+        master.gain.linearRampToValueAtTime(0.17 * gainScale * SYNTH_LEVEL, now + 0.014);
+        const oscs = [];
+        midiNotes.forEach((midi) => {
+          const o = ctx.createOscillator();
+          o.type = "triangle";
+          o.frequency.value = midiToHz(midi);
+          const g = ctx.createGain();
+          g.gain.value = 0.38 * gainScale * SYNTH_LEVEL;
+          o.connect(g);
+          g.connect(master);
+          o.start(now);
+          oscs.push(o);
+        });
+        return {
+          stop() {
+            const t = ctx.currentTime;
+            fadeMasterOut(master, ctx, 0.12);
+            oscs.forEach((o) => {
+              try {
+                o.stop(t + 0.14);
+              } catch (_) {}
+            });
+            disconnectGainLater(master, 220);
+          },
+        };
       });
-      return {
-        stop() {
-          const t = ctx.currentTime;
-          try {
-            master.gain.cancelScheduledValues(t);
-            master.gain.setValueAtTime(Math.max(1e-4, master.gain.value), t);
-            master.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-          } catch (_) {}
-          oscs.forEach((o) => {
-            try {
-              o.stop(t + 0.14);
-            } catch (_) {}
-          });
-          setTimeout(() => {
-            try {
-              master.disconnect();
-            } catch (_) {}
-          }, 220);
-        },
-      };
     }
 
     /** 长按：每声部单轨 loop，无叠奏；松手调用 stop() */
@@ -619,13 +645,14 @@
       const ctx = getCtx();
       const destination = opts.destination || ctx.destination;
       const gainScale = opts.gainScale ?? 1;
-      const bases = [...new Set(midiNotes.map(nearestPianoSampleMidi))];
-      return Promise.all(bases.map((b) => loadPianoBuffer(ctx, b)))
+      const synthHoldFallback = () => playChordSynthHold(midiNotes, opts);
+
+      return whenReadyAndSamples(ctx, midiNotes)
         .then(() => {
           const master = ctx.createGain();
           master.gain.value = 0;
           master.connect(destination);
-          const now = ctx.currentTime + 0.002;
+          const now = ctx.currentTime + 0.008;
           const peak = 0.55 * gainScale * PIANO_LEVEL;
           master.gain.linearRampToValueAtTime(peak, now + 0.014);
           const sources = [];
@@ -635,8 +662,7 @@
             if (!buf) return;
             const src = ctx.createBufferSource();
             src.buffer = buf;
-            const rate = Math.pow(2, (midi - base) / 12);
-            src.playbackRate.value = rate;
+            src.playbackRate.value = playbackRateSemi(midi, base);
             const bufLen = buf.duration;
             if (bufLen > 0.55) {
               src.loop = true;
@@ -653,33 +679,39 @@
             src.start(now);
             sources.push(src);
           });
+          if (sources.length === 0) {
+            try {
+              master.disconnect();
+            } catch (_) {}
+            return synthHoldFallback();
+          }
           return {
             stop() {
               const t = ctx.currentTime;
-              try {
-                master.gain.cancelScheduledValues(t);
-                master.gain.setValueAtTime(Math.max(1e-4, master.gain.value), t);
-                master.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
-              } catch (_) {}
+              fadeMasterOut(master, ctx, 0.13);
               sources.forEach((s) => {
                 try {
                   s.stop(t + 0.16);
                 } catch (_) {}
               });
-              setTimeout(() => {
-                try {
-                  master.disconnect();
-                } catch (_) {}
-              }, 280);
+              disconnectGainLater(master, 280);
             },
           };
         })
-        .catch(() => playChordSynthHold(midiNotes, opts));
+        .catch(synthHoldFallback);
     }
 
     const grid = document.getElementById("grid");
     const keySelect = document.getElementById("keySelect");
     const keyTitle = document.getElementById("keyTitle");
+
+    function selectedKey() {
+      return MAJOR_KEYS.find((k) => k.id === keySelect.value) || MAJOR_KEYS[0];
+    }
+
+    function safeStopHold(ctl) {
+      if (ctl && typeof ctl.stop === "function") ctl.stop();
+    }
 
     MAJOR_KEYS.forEach((k) => {
       const opt = document.createElement("option");
@@ -732,19 +764,16 @@
         btn.classList.add("is-pressing");
         clearHoldTimer();
         const ctx = getCtx();
-        const tonicPre =
-          (MAJOR_KEYS.find((kk) => kk.id === keySelect.value) || MAJOR_KEYS[0]).tonicMidi;
-        preloadPianoForTonic(tonicPre);
-        [...new Set(midiNotes.map(nearestPianoSampleMidi))].forEach((b) => {
-          loadPianoBuffer(ctx, b);
-        });
+        void whenContextReady(ctx);
+        preloadPianoForTonic(selectedKey().tonicMidi);
+        chordSampleBases(midiNotes).forEach((b) => loadPianoBuffer(ctx, b));
         holdTimer = setTimeout(() => {
           holdTimer = null;
           tapPending = false;
           holdPromise = playChordHold(midiNotes, { gainScale: 1 }).then((ctl) => {
             holdPromise = null;
             holdCtl = ctl;
-            if (!down) ctl.stop();
+            if (!down) safeStopHold(ctl);
           });
         }, HOLD_ARM_MS);
       };
@@ -758,12 +787,10 @@
           playChord(midiNotes, { durationSec: TAP_DURATION_SEC });
         } else {
           if (holdCtl) {
-            holdCtl.stop();
+            safeStopHold(holdCtl);
             holdCtl = null;
           } else if (holdPromise) {
-            holdPromise.then((ctl) => {
-              if (ctl) ctl.stop();
-            });
+            holdPromise.then(safeStopHold);
           }
         }
         tapPending = false;
@@ -785,7 +812,7 @@
     }
 
     function renderChords() {
-      const key = MAJOR_KEYS.find((k) => k.id === keySelect.value) || MAJOR_KEYS[0];
+      const key = selectedKey();
       keyTitle.textContent = key.id;
       keyTitle.classList.remove("is-bump");
       void keyTitle.offsetWidth;
@@ -806,8 +833,8 @@
             ? `<span class="roman-h">${rom[0]}</span> · ${rom[1]}`
             : ROMAN[i];
         btn.innerHTML = `
-          <span class="chord-key__name">${label}</span>
-          <div class="chord-key__deg">${romanLine}</div>
+          <div class="chord-key__roman">${romanLine}</div>
+          <span class="chord-key__label">${label}</span>
         `;
         bindChordPointer(btn, triads[i]);
         grid.appendChild(btn);
@@ -818,17 +845,11 @@
     keySelect.addEventListener("change", renderChords);
     renderChords();
 
-    if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(() => {
-        const k = MAJOR_KEYS.find((x) => x.id === keySelect.value) || MAJOR_KEYS[0];
-        preloadPianoForTonic(k.tonicMidi);
-      });
-    } else {
-      setTimeout(() => {
-        const k = MAJOR_KEYS.find((x) => x.id === keySelect.value) || MAJOR_KEYS[0];
-        preloadPianoForTonic(k.tonicMidi);
-      }, 400);
+    function preloadIdle() {
+      preloadPianoForTonic(selectedKey().tonicMidi);
     }
+    if (typeof requestIdleCallback !== "undefined") requestIdleCallback(preloadIdle);
+    else setTimeout(preloadIdle, 400);
   </script>
 </body>
 </html>
