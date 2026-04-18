@@ -210,12 +210,12 @@
         left: 5px;
         width: 3px;
       }
+      .chord-key__label {
+        font-size: clamp(0.78rem, 3.2vw, 0.98rem);
+      }
       .chord-key__roman {
         font-size: clamp(0.54rem, 2vw, 0.64rem);
         line-height: 1.3;
-      }
-      .chord-key__label {
-        font-size: clamp(0.78rem, 3.2vw, 0.98rem);
         margin-top: 0.38rem;
       }
     }
@@ -285,8 +285,17 @@
       -webkit-user-select: none;
       user-select: none;
     }
-    /** 第一行：罗马级数 · 结构；第二行：和弦名 */
+    /** 第一行：和弦名；第二行：罗马数字 · 结构（汉字） */
+    .chord-key__label {
+      font-size: clamp(0.95rem, 2.8vw, 1.15rem);
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      line-height: 1.12;
+      text-align: center;
+    }
     .chord-key__roman {
+      margin-top: 0.45rem;
       font-family: "JetBrains Mono", ui-monospace, monospace;
       font-size: clamp(0.6rem, 1.85vw, 0.72rem);
       font-weight: 500;
@@ -298,15 +307,6 @@
     .chord-key__roman span.roman-h {
       color: var(--stripe);
       opacity: 0.95;
-    }
-    .chord-key__label {
-      margin-top: 0.45rem;
-      font-size: clamp(0.95rem, 2.8vw, 1.15rem);
-      font-weight: 650;
-      letter-spacing: -0.02em;
-      color: var(--text);
-      line-height: 1.12;
-      text-align: center;
     }
     @media (prefers-reduced-motion: reduce) {
       .bg-scene::before,
@@ -339,9 +339,9 @@
         <span id="keyTitle" class="key-title">C</span><span class="title-rest"> 大调 · 顺阶三和弦</span>
       </h1>
       <div class="toolbar">
-        <label for="keySelect">调性</label>
+        <label for="keySelect">调式</label>
         <div class="select-wrap">
-          <select id="keySelect" aria-label="选择大调调性"></select>
+          <select id="keySelect" aria-label="选择大调调式"></select>
         </div>
       </div>
     </header>
@@ -833,8 +833,8 @@
             ? `<span class="roman-h">${rom[0]}</span> · ${rom[1]}`
             : ROMAN[i];
         btn.innerHTML = `
-          <div class="chord-key__roman">${romanLine}</div>
           <span class="chord-key__label">${label}</span>
+          <div class="chord-key__roman">${romanLine}</div>
         `;
         bindChordPointer(btn, triads[i]);
         grid.appendChild(btn);
