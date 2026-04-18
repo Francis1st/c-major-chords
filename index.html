@@ -1,0 +1,265 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>大调自然和弦</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --text: #e8eef5;
+      --muted: #8b9cb3;
+      --accent: #5b8def;
+      --ring: rgba(91, 141, 239, 0.45);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(ellipse 120% 80% at 50% -20%, #1e2a44 0%, var(--bg) 55%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    h1 {
+      font-weight: 600;
+      font-size: 1.35rem;
+      letter-spacing: 0.02em;
+      margin: 0 0 0.35rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.75rem;
+      text-align: center;
+      max-width: 28rem;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+      gap: 0.75rem;
+      width: 100%;
+      max-width: 36rem;
+    }
+    button {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: linear-gradient(165deg, #243149 0%, var(--panel) 100%);
+      color: var(--text);
+      padding: 1rem 0.75rem;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.08s ease, border-color 0.15s, box-shadow 0.15s, background 0.15s;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+    button:hover {
+      border-color: rgba(91, 141, 239, 0.35);
+      background: linear-gradient(165deg, #2a3854 0%, #1f2a3d 100%);
+    }
+    button:active {
+      transform: scale(0.97);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    button:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--ring);
+    }
+    .roman {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+    footer {
+      margin-top: 2rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+      max-width: 32rem;
+      line-height: 1.45;
+    }
+    a { color: var(--accent); }
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1.1rem;
+      flex-wrap: wrap;
+    }
+    .controls label {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    select {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: var(--panel);
+      color: var(--text);
+      padding: 0.45rem 2rem 0.45rem 0.65rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+      background-position: calc(100% - 0.65rem) 55%, calc(100% - 0.45rem) 55%;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+    select:hover {
+      border-color: rgba(91, 141, 239, 0.35);
+    }
+    select:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--ring);
+    }
+  </style>
+</head>
+<body>
+  <h1><span id="keyTitle">C</span> 大调七个自然和弦</h1>
+  <p class="subtitle">选择调性后点击按钮播放和弦。声音由浏览器 Web Audio API 实时合成，无需下载音频文件。</p>
+  <div class="controls">
+    <label for="keySelect">调性</label>
+    <select id="keySelect" aria-label="选择大调调性"></select>
+  </div>
+  <div class="grid" id="grid"></div>
+  <footer>
+    和弦为原位自然三和弦（I、ii、iii、IV、V、vi、vii°）。若需钢琴采样，可在
+    <a href="https://freesound.org">Freesound</a>
+    或
+    <a href="https://musescore.org">MuseScore</a>
+    社区查找 CC 许可素材。
+  </footer>
+
+  <script>
+    function midiToHz(m) {
+      return 440 * Math.pow(2, (m - 69) / 12);
+    }
+
+    const ROMAN = [
+      "I — 大三",
+      "ii — 小三",
+      "iii — 小三",
+      "IV — 大三",
+      "V — 大三",
+      "vi — 小三",
+      "vii° — 减三",
+    ];
+
+    /** 十二个大调：主音 MIDI（中央 C 附近）与自然和弦标记 */
+    const MAJOR_KEYS = [
+      { id: "C", tonicMidi: 60, labels: ["C", "Dm", "Em", "F", "G", "Am", "B°"] },
+      { id: "Db", tonicMidi: 61, labels: ["Db", "Ebm", "Fm", "Gb", "Ab", "Bbm", "C°"] },
+      { id: "D", tonicMidi: 62, labels: ["D", "Em", "F#m", "G", "A", "Bm", "C#°"] },
+      { id: "Eb", tonicMidi: 63, labels: ["Eb", "Fm", "Gm", "Ab", "Bb", "Cm", "D°"] },
+      { id: "E", tonicMidi: 64, labels: ["E", "F#m", "G#m", "A", "B", "C#m", "D#°"] },
+      { id: "F", tonicMidi: 65, labels: ["F", "Gm", "Am", "Bb", "C", "Dm", "E°"] },
+      { id: "F#", tonicMidi: 66, labels: ["F#", "G#m", "A#m", "B", "C#", "D#m", "E#°"] },
+      { id: "G", tonicMidi: 67, labels: ["G", "Am", "Bm", "C", "D", "Em", "F#°"] },
+      { id: "Ab", tonicMidi: 68, labels: ["Ab", "Bbm", "Cm", "Db", "Eb", "Fm", "G°"] },
+      { id: "A", tonicMidi: 69, labels: ["A", "Bm", "C#m", "D", "E", "F#m", "G#°"] },
+      { id: "Bb", tonicMidi: 70, labels: ["Bb", "Cm", "Dm", "Eb", "F", "Gm", "A°"] },
+      { id: "B", tonicMidi: 71, labels: ["B", "C#m", "D#m", "E", "F#", "G#m", "A#°"] },
+    ];
+
+    function diatonicTriadsFromTonic(T) {
+      return [
+        [T, T + 4, T + 7],
+        [T + 2, T + 5, T + 9],
+        [T + 4, T + 7, T + 11],
+        [T + 5, T + 9, T + 12],
+        [T + 7, T + 11, T + 14],
+        [T + 9, T + 12, T + 16],
+        [T + 11, T + 14, T + 17],
+      ];
+    }
+
+    let audioCtx = null;
+
+    function getCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playChord(midiNotes, durationSec = 1.35) {
+      const ctx = getCtx();
+      const master = ctx.createGain();
+      master.gain.value = 0;
+      master.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      const attack = 0.02;
+      const peak = 0.14;
+
+      master.gain.setValueAtTime(0, now);
+      master.gain.linearRampToValueAtTime(peak, now + attack);
+      master.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+
+      midiNotes.forEach((midi, i) => {
+        const detuneCents = (i - 1) * 3;
+        const osc = ctx.createOscillator();
+        osc.type = "triangle";
+        osc.frequency.value = midiToHz(midi);
+        osc.detune.value = detuneCents;
+
+        const voiceGain = ctx.createGain();
+        voiceGain.gain.value = 0.32;
+
+        osc.connect(voiceGain);
+        voiceGain.connect(master);
+        osc.start(now);
+        osc.stop(now + durationSec + 0.05);
+      });
+
+      setTimeout(() => {
+        try {
+          master.disconnect();
+        } catch (_) {}
+      }, (durationSec + 0.2) * 1000);
+    }
+
+    const grid = document.getElementById("grid");
+    const keySelect = document.getElementById("keySelect");
+    const keyTitle = document.getElementById("keyTitle");
+
+    MAJOR_KEYS.forEach((k) => {
+      const opt = document.createElement("option");
+      opt.value = k.id;
+      opt.textContent = `${k.id} 大调`;
+      keySelect.appendChild(opt);
+    });
+
+    function renderChords() {
+      const key = MAJOR_KEYS.find((k) => k.id === keySelect.value) || MAJOR_KEYS[0];
+      keyTitle.textContent = key.id;
+      const triads = diatonicTriadsFromTonic(key.tonicMidi);
+      grid.replaceChildren();
+      key.labels.forEach((label, i) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.innerHTML = `${label}<span class="roman">${ROMAN[i]}</span>`;
+        btn.addEventListener("click", () => playChord(triads[i]));
+        grid.appendChild(btn);
+      });
+    }
+
+    keySelect.addEventListener("change", renderChords);
+    renderChords();
+  </script>
+</body>
+</html>
