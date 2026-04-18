@@ -14,16 +14,16 @@
 
 ## 运行方式
 
-仓库根目录只有一个 `index.html`，无需构建。
+静态站点：`index.html` + `css/app.css` + `js/` 下 ES 模块，**无需构建**；因使用 `type="module"`，请通过 **本地 HTTP** 打开（`file://` 下模块脚本常被浏览器拦截）。
 
 **本地预览**（任选其一）：
 
 ```bash
-# Python 3
+# Python 3（在仓库根目录执行）
 python -m http.server 8080
 ```
 
-浏览器打开 `http://localhost:8080/`（或直接双击用浏览器打开该文件；部分环境对 `file://` 与网络音频有限制，推荐本地 HTTP）。
+浏览器打开 `http://localhost:8080/`。
 
 ## 部署到 GitHub Pages
 
@@ -35,7 +35,7 @@ python -m http.server 8080
 
 ## 技术说明
 
-- **纯静态**：HTML + CSS + 原生 JavaScript，无框架。  
+- **纯静态**：HTML + 外链 CSS + **ES Modules**（`app.js` 入口；`constants` 共享配置；`music-theory` / `piano-samples` / `audio-playback` / `piano-keyboard` / `custom-chords` / `chord-pointer` 各司其职），无框架。  
 - **音频**：`Web Audio API`；钢琴为 `fetch` + `decodeAudioData`，带缓存与按调预加载。  
 - **字体**：Outfit、JetBrains Mono（Google Fonts，需联网）。
 
