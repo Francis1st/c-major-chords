@@ -4,146 +4,345 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>大调自然和弦</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0f1419;
-      --panel: #1a2332;
-      --text: #e8eef5;
-      --muted: #8b9cb3;
-      --accent: #5b8def;
-      --ring: rgba(91, 141, 239, 0.45);
+      --bg: #090b0f;
+      --surface: #12151c;
+      --surface-elev: #181c26;
+      --border: rgba(255, 255, 255, 0.065);
+      --text: #eceef3;
+      --muted: #6d7588;
+      --accent: #8ab4ff;
+      --ring: rgba(138, 180, 255, 0.45);
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --spring: cubic-bezier(0.34, 1.45, 0.64, 1);
     }
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-      background: radial-gradient(ellipse 120% 80% at 50% -20%, #1e2a44 0%, var(--bg) 55%);
+      font-family: Outfit, system-ui, -apple-system, sans-serif;
       color: var(--text);
+      background: var(--bg);
+      overflow-x: hidden;
+    }
+    .bg-scene {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 55% at 50% -10%, rgba(55, 75, 120, 0.18) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 40% at 90% 80%, rgba(90, 50, 90, 0.08) 0%, transparent 45%),
+        linear-gradient(180deg, #0b0d12 0%, var(--bg) 45%, #060709 100%);
+    }
+    .bg-scene::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.35;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+      background-size: 4px 4px;
+      mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 0%, transparent 72%);
+    }
+    .shell {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
       justify-content: center;
-      padding: 1.5rem;
+      padding: clamp(1.5rem, 5vw, 2.75rem) clamp(1rem, 4vw, 1.75rem);
+      max-width: 46rem;
+      margin: 0 auto;
+      animation: shellIn 0.55s var(--ease) both;
     }
-    h1 {
-      font-weight: 600;
-      font-size: 1.35rem;
-      letter-spacing: 0.02em;
-      margin: 0 0 0.35rem;
+    @keyframes shellIn {
+      from { opacity: 0; transform: translateY(8px); }
     }
-    .subtitle {
-      color: var(--muted);
-      font-size: 0.9rem;
+    .hero {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem 1.5rem;
       margin-bottom: 1.75rem;
-      text-align: center;
-      max-width: 28rem;
-      line-height: 1.5;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
-      gap: 0.75rem;
-      width: 100%;
-      max-width: 36rem;
+    .hero h1 {
+      font-weight: 650;
+      font-size: clamp(1.5rem, 5vw, 2rem);
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin: 0;
+      flex: 1 1 12rem;
+      opacity: 0;
+      animation: fadeUp 0.5s var(--ease) 0.06s forwards;
     }
-    button {
-      appearance: none;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: linear-gradient(165deg, #243149 0%, var(--panel) 100%);
-      color: var(--text);
-      padding: 1rem 0.75rem;
-      border-radius: 12px;
-      font-size: 1.05rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.08s ease, border-color 0.15s, box-shadow 0.15s, background 0.15s;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    .hero h1 .key-title {
+      display: inline-block;
+      color: var(--accent);
+      font-weight: 700;
+      min-width: 0.5em;
     }
-    button:hover {
-      border-color: rgba(91, 141, 239, 0.35);
-      background: linear-gradient(165deg, #2a3854 0%, #1f2a3d 100%);
+    .hero h1 .key-title.is-bump {
+      animation: keyBump 0.45s var(--spring) both;
     }
-    button:active {
-      transform: scale(0.97);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    @keyframes keyBump {
+      0%, 100% { transform: scale(1); }
+      40% { transform: scale(1.08); }
     }
-    button:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 3px var(--ring);
-    }
-    .roman {
-      display: block;
-      font-size: 0.72rem;
+    .hero h1 .title-rest {
       font-weight: 500;
       color: var(--muted);
-      margin-top: 0.25rem;
+      font-size: 0.92em;
     }
-    footer {
-      margin-top: 2rem;
-      font-size: 0.78rem;
-      color: var(--muted);
-      text-align: center;
-      max-width: 32rem;
-      line-height: 1.45;
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    a { color: var(--accent); }
-    .controls {
+    .toolbar {
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: 0.5rem;
-      margin-bottom: 1.1rem;
-      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.5s var(--ease) 0.12s forwards;
     }
-    .controls label {
-      font-size: 0.9rem;
+    .toolbar label {
+      font-size: 0.75rem;
+      font-weight: 500;
       color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .select-wrap {
+      position: relative;
+    }
+    .select-wrap::after {
+      content: "";
+      position: absolute;
+      right: 0.7rem;
+      top: 50%;
+      width: 0.4rem;
+      height: 0.4rem;
+      border-right: 1.5px solid var(--muted);
+      border-bottom: 1.5px solid var(--muted);
+      transform: translateY(-60%) rotate(45deg);
+      pointer-events: none;
+      opacity: 0.55;
     }
     select {
       appearance: none;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      background: var(--panel);
-      color: var(--text);
-      padding: 0.45rem 2rem 0.45rem 0.65rem;
-      border-radius: 10px;
-      font-size: 0.95rem;
+      font-family: inherit;
+      font-size: 0.875rem;
       font-weight: 600;
+      color: var(--text);
+      padding: 0.5rem 2.1rem 0.5rem 0.85rem;
+      min-width: 8.5rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-elev);
       cursor: pointer;
-      background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
-        linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-      background-position: calc(100% - 0.65rem) 55%, calc(100% - 0.45rem) 55%;
-      background-size: 5px 5px, 5px 5px;
-      background-repeat: no-repeat;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
     select:hover {
-      border-color: rgba(91, 141, 239, 0.35);
+      border-color: rgba(138, 180, 255, 0.25);
     }
     select:focus-visible {
       outline: none;
       box-shadow: 0 0 0 3px var(--ring);
     }
+    .chord-strip {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: clamp(0.4rem, 1.8vw, 0.65rem);
+      width: 100%;
+      opacity: 0;
+      animation: fadeUp 0.55s var(--ease) 0.18s forwards;
+    }
+    @media (max-width: 640px) {
+      .hero {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .toolbar {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+    .chord-key {
+      touch-action: manipulation;
+      appearance: none;
+      -webkit-tap-highlight-color: transparent;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: clamp(7.5rem, 22vw, 9.5rem);
+      padding: 0.85rem 0.4rem 0.75rem;
+      padding-left: 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+      background: linear-gradient(165deg, var(--surface-elev) 0%, var(--surface) 100%);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      transform: translateY(0);
+      transition: transform 0.22s var(--spring), border-color 0.2s, box-shadow 0.25s var(--ease);
+      animation: chordIn 0.5s var(--ease) backwards;
+      animation-delay: calc(0.22s + var(--i, 0) * 0.045s);
+    }
+    @keyframes chordIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+    }
+    .chord-key::before {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 14%;
+      bottom: 14%;
+      width: 3px;
+      border-radius: 2px;
+      background: var(--stripe);
+      box-shadow: 0 0 14px rgba(0, 0, 0, 0.35);
+      opacity: 0.92;
+      transition: opacity 0.2s, box-shadow 0.25s;
+    }
+    .chord-key:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
+    }
+    .chord-key:hover::before {
+      box-shadow: 0 0 18px var(--stripe-glow);
+    }
+    .chord-key:active,
+    .chord-key.is-pressing {
+      transform: translateY(0) scale(0.97);
+      transition-duration: 0.1s;
+    }
+    .chord-key:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--ring);
+    }
+    .chord-key__name {
+      font-size: clamp(0.95rem, 2.8vw, 1.15rem);
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      line-height: 1.1;
+    }
+    .chord-key__deg {
+      margin-top: 0.4rem;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-size: clamp(0.58rem, 1.8vw, 0.68rem);
+      font-weight: 500;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.35;
+      max-width: 100%;
+    }
+    .chord-key__deg span.roman-h {
+      color: var(--stripe);
+      opacity: 0.95;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bg-scene::before,
+      .shell,
+      .hero h1,
+      .toolbar,
+      .chord-strip,
+      .chord-key,
+      .hero h1 .key-title.is-bump {
+        animation: none !important;
+      }
+      .hero h1,
+      .toolbar,
+      .chord-strip,
+      .chord-key {
+        opacity: 1;
+        transform: none;
+      }
+      .chord-key:hover {
+        transform: none;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1><span id="keyTitle">C</span> 大调七个自然和弦</h1>
-  <p class="subtitle">选择调性后点击按钮播放和弦。声音由浏览器 Web Audio API 实时合成，无需下载音频文件。</p>
-  <div class="controls">
-    <label for="keySelect">调性</label>
-    <select id="keySelect" aria-label="选择大调调性"></select>
-  </div>
-  <div class="grid" id="grid"></div>
-  <footer>
-    和弦为原位自然三和弦（I、ii、iii、IV、V、vi、vii°）。若需钢琴采样，可在
-    <a href="https://freesound.org">Freesound</a>
-    或
-    <a href="https://musescore.org">MuseScore</a>
-    社区查找 CC 许可素材。
-  </footer>
+  <div class="bg-scene" aria-hidden="true"></div>
+  <main class="shell">
+    <header class="hero">
+      <h1>
+        <span id="keyTitle" class="key-title">C</span><span class="title-rest"> 大调 · 自然七和弦</span>
+      </h1>
+      <div class="toolbar">
+        <label for="keySelect">调性</label>
+        <div class="select-wrap">
+          <select id="keySelect" aria-label="选择大调调性"></select>
+        </div>
+      </div>
+    </header>
+    <div class="chord-strip" id="grid" role="group" aria-label="大调自然和弦"></div>
+  </main>
 
   <script>
     function midiToHz(m) {
       return 440 * Math.pow(2, (m - 69) / 12);
+    }
+
+    /** Salamander（tambien/Piano）：每小三度一轨，文件名 A / C / Ds / Fs + 八度 + v力度 */
+    const PIANO_BASE =
+      "https://cdn.jsdelivr.net/gh/tambien/Piano@master/audio/";
+    const PIANO_VELOCITY = 5;
+    const pianoBufferCache = new Map();
+    const pianoLoadPromises = new Map();
+
+    function nearestPianoSampleMidi(midi) {
+      const k = Math.round((midi - 21) / 3);
+      const clamped = Math.max(0, Math.min(29, k));
+      return 21 + 3 * clamped;
+    }
+
+    function pianoSampleFilename(baseMidi) {
+      const pc = baseMidi % 12;
+      const oct = Math.floor(baseMidi / 12) - 1;
+      const stem = { 0: "C", 3: "Ds", 6: "Fs", 9: "A" }[pc];
+      return `${stem}${oct}v${PIANO_VELOCITY}.mp3`;
+    }
+
+    function loadPianoBuffer(ctx, baseMidi) {
+      if (pianoBufferCache.has(baseMidi)) {
+        return Promise.resolve(pianoBufferCache.get(baseMidi));
+      }
+      if (pianoLoadPromises.has(baseMidi)) {
+        return pianoLoadPromises.get(baseMidi);
+      }
+      const url = PIANO_BASE + pianoSampleFilename(baseMidi);
+      const p = fetch(url)
+        .then((res) => {
+          if (!res.ok) throw new Error(`${res.status} ${url}`);
+          return res.arrayBuffer();
+        })
+        .then((ab) => ctx.decodeAudioData(ab.slice(0)))
+        .then((buf) => {
+          pianoBufferCache.set(baseMidi, buf);
+          pianoLoadPromises.delete(baseMidi);
+          return buf;
+        })
+        .catch((err) => {
+          pianoLoadPromises.delete(baseMidi);
+          throw err;
+        });
+      pianoLoadPromises.set(baseMidi, p);
+      return p;
     }
 
     const ROMAN = [
@@ -172,16 +371,42 @@
       { id: "B", tonicMidi: 71, labels: ["B", "C#m", "D#m", "E", "F#", "G#m", "A#°"] },
     ];
 
-    function diatonicTriadsFromTonic(T) {
-      return [
-        [T, T + 4, T + 7],
-        [T + 2, T + 5, T + 9],
-        [T + 4, T + 7, T + 11],
-        [T + 5, T + 9, T + 12],
-        [T + 7, T + 11, T + 14],
-        [T + 9, T + 12, T + 16],
-        [T + 11, T + 14, T + 17],
-      ];
+    /**
+     * C 大调「就近」固定排声（小字组～小字一组一带，和弦之间少跳、好弹）：
+     * C4E4G4、A3D4F4、B3E4G4、A3C4F4、B3D4G4、A3C4E4、B3D4F4（I … vii°）。
+     * 其它调：整表半音平移至该调主音（+ (主音MIDI − 60)）。
+     */
+    const VOICING_C_TEMPLATE = [
+      [60, 64, 67],
+      [57, 62, 65],
+      [59, 64, 67],
+      [57, 60, 65],
+      [59, 62, 67],
+      [57, 60, 64],
+      [59, 62, 65],
+    ];
+
+    function voicedTriadsForKey(tonicMidi) {
+      const d = tonicMidi - 60;
+      return VOICING_C_TEMPLATE.map((ch) => ch.map((n) => n + d));
+    }
+
+    /** 钢琴输出总增益（易偏小，与合成器分开调） */
+    const PIANO_LEVEL = 1.48;
+    const SYNTH_LEVEL = 1.28;
+
+    function collectSampleBasesForTonic(tonicMidi) {
+      const s = new Set();
+      voicedTriadsForKey(tonicMidi).forEach((triad) => {
+        triad.forEach((m) => s.add(nearestPianoSampleMidi(m)));
+      });
+      return Array.from(s);
+    }
+
+    function preloadPianoForTonic(tonicMidi) {
+      const ctx = getCtx();
+      const bases = collectSampleBasesForTonic(tonicMidi);
+      return Promise.all(bases.map((b) => loadPianoBuffer(ctx, b))).catch(() => {});
     }
 
     let audioCtx = null;
@@ -196,15 +421,18 @@
       return audioCtx;
     }
 
-    function playChord(midiNotes, durationSec = 1.35) {
+    function playChordSynth(midiNotes, opts = {}) {
+      const durationSec = opts.durationSec ?? 1.35;
+      const destination = opts.destination;
+      const gainScale = opts.gainScale ?? 1;
       const ctx = getCtx();
       const master = ctx.createGain();
       master.gain.value = 0;
-      master.connect(ctx.destination);
+      master.connect(destination || ctx.destination);
 
       const now = ctx.currentTime;
-      const attack = 0.02;
-      const peak = 0.14;
+      const attack = 0.018;
+      const peak = 0.22 * gainScale * SYNTH_LEVEL;
 
       master.gain.setValueAtTime(0, now);
       master.gain.linearRampToValueAtTime(peak, now + attack);
@@ -218,7 +446,7 @@
         osc.detune.value = detuneCents;
 
         const voiceGain = ctx.createGain();
-        voiceGain.gain.value = 0.32;
+        voiceGain.gain.value = 0.42 * gainScale * SYNTH_LEVEL;
 
         osc.connect(voiceGain);
         voiceGain.connect(master);
@@ -233,6 +461,165 @@
       }, (durationSec + 0.2) * 1000);
     }
 
+    function playChord(midiNotes, opts = {}) {
+      const durationSec = opts.durationSec ?? 2.45;
+      const destination = opts.destination;
+      const gainScale = opts.gainScale ?? 1;
+      const ctx = getCtx();
+      const bases = [...new Set(midiNotes.map(nearestPianoSampleMidi))];
+      Promise.all(bases.map((b) => loadPianoBuffer(ctx, b)))
+        .then(() => {
+          const master = ctx.createGain();
+          master.gain.value = 0;
+          master.connect(destination || ctx.destination);
+
+          const now = ctx.currentTime + 0.004;
+          const attack = 0.008;
+          const peak = 0.62 * gainScale * PIANO_LEVEL;
+
+          master.gain.setValueAtTime(0, now);
+          master.gain.linearRampToValueAtTime(peak, now + attack);
+          master.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+
+          midiNotes.forEach((midi, i) => {
+            const base = nearestPianoSampleMidi(midi);
+            const buf = pianoBufferCache.get(base);
+            if (!buf) return;
+
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            const rate = Math.pow(2, (midi - base) / 12);
+            src.playbackRate.value = rate;
+
+            const voiceGain = ctx.createGain();
+            voiceGain.gain.value = (0.62 - i * 0.045) * gainScale * PIANO_LEVEL;
+
+            src.connect(voiceGain);
+            voiceGain.connect(master);
+
+            const bufSec = buf.duration / rate;
+            const stopAt = now + Math.min(bufSec, durationSec + 0.25);
+            src.start(now);
+            src.stop(stopAt);
+          });
+
+          setTimeout(() => {
+            try {
+              master.disconnect();
+            } catch (_) {}
+          }, (durationSec + 0.45) * 1000);
+        })
+        .catch(() => {
+          playChordSynth(midiNotes, { durationSec, destination, gainScale });
+        });
+    }
+
+    function playChordSynthHold(midiNotes, opts = {}) {
+      const ctx = getCtx();
+      const destination = opts.destination || ctx.destination;
+      const gainScale = opts.gainScale ?? 1;
+      const master = ctx.createGain();
+      master.gain.value = 0;
+      master.connect(destination);
+      const now = ctx.currentTime + 0.003;
+      master.gain.linearRampToValueAtTime(0.17 * gainScale * SYNTH_LEVEL, now + 0.03);
+      const oscs = [];
+      midiNotes.forEach((midi) => {
+        const o = ctx.createOscillator();
+        o.type = "triangle";
+        o.frequency.value = midiToHz(midi);
+        const g = ctx.createGain();
+        g.gain.value = 0.38 * gainScale * SYNTH_LEVEL;
+        o.connect(g);
+        g.connect(master);
+        o.start(now);
+        oscs.push(o);
+      });
+      return {
+        stop() {
+          const t = ctx.currentTime;
+          try {
+            master.gain.cancelScheduledValues(t);
+            master.gain.setValueAtTime(Math.max(1e-4, master.gain.value), t);
+            master.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          } catch (_) {}
+          oscs.forEach((o) => {
+            try {
+              o.stop(t + 0.14);
+            } catch (_) {}
+          });
+          setTimeout(() => {
+            try {
+              master.disconnect();
+            } catch (_) {}
+          }, 220);
+        },
+      };
+    }
+
+    /** 长按：每声部单轨 loop，无叠奏；松手调用 stop() */
+    function playChordHold(midiNotes, opts = {}) {
+      const ctx = getCtx();
+      const destination = opts.destination || ctx.destination;
+      const gainScale = opts.gainScale ?? 1;
+      const bases = [...new Set(midiNotes.map(nearestPianoSampleMidi))];
+      return Promise.all(bases.map((b) => loadPianoBuffer(ctx, b)))
+        .then(() => {
+          const master = ctx.createGain();
+          master.gain.value = 0;
+          master.connect(destination);
+          const now = ctx.currentTime + 0.004;
+          const peak = 0.55 * gainScale * PIANO_LEVEL;
+          master.gain.linearRampToValueAtTime(peak, now + 0.032);
+          const sources = [];
+          midiNotes.forEach((midi, i) => {
+            const base = nearestPianoSampleMidi(midi);
+            const buf = pianoBufferCache.get(base);
+            if (!buf) return;
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            const rate = Math.pow(2, (midi - base) / 12);
+            src.playbackRate.value = rate;
+            const bufLen = buf.duration;
+            if (bufLen > 0.55) {
+              src.loop = true;
+              src.loopStart = Math.min(bufLen * 0.28, bufLen * 0.38);
+              src.loopEnd = Math.max(bufLen * 0.84, src.loopStart + 0.1);
+              if (src.loopEnd - src.loopStart < 0.09) {
+                src.loop = false;
+              }
+            }
+            const vg = ctx.createGain();
+            vg.gain.value = (0.56 - i * 0.04) * gainScale * PIANO_LEVEL;
+            src.connect(vg);
+            vg.connect(master);
+            src.start(now);
+            sources.push(src);
+          });
+          return {
+            stop() {
+              const t = ctx.currentTime;
+              try {
+                master.gain.cancelScheduledValues(t);
+                master.gain.setValueAtTime(Math.max(1e-4, master.gain.value), t);
+                master.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+              } catch (_) {}
+              sources.forEach((s) => {
+                try {
+                  s.stop(t + 0.16);
+                } catch (_) {}
+              });
+              setTimeout(() => {
+                try {
+                  master.disconnect();
+                } catch (_) {}
+              }, 280);
+            },
+          };
+        })
+        .catch(() => playChordSynthHold(midiNotes, opts));
+    }
+
     const grid = document.getElementById("grid");
     const keySelect = document.getElementById("keySelect");
     const keyTitle = document.getElementById("keyTitle");
@@ -244,22 +631,142 @@
       keySelect.appendChild(opt);
     });
 
+    /** 七级色彩：左侧色条 + 罗马数字点缀（主体为深色面板） */
+    const CHORD_ACCENTS = [
+      { stripe: "#e05252", glow: "rgba(224, 82, 82, 0.55)" },
+      { stripe: "#e1883d", glow: "rgba(225, 136, 61, 0.5)" },
+      { stripe: "#c9a43a", glow: "rgba(201, 164, 58, 0.48)" },
+      { stripe: "#4fb884", glow: "rgba(79, 184, 132, 0.48)" },
+      { stripe: "#45a8c9", glow: "rgba(69, 168, 201, 0.5)" },
+      { stripe: "#6b8ae8", glow: "rgba(107, 138, 232, 0.52)" },
+      { stripe: "#9b72d4", glow: "rgba(155, 114, 212, 0.52)" },
+    ];
+
+    const TAP_DURATION_SEC = 2.65;
+    const HOLD_ARM_MS = 350;
+
+    function bindChordPointer(btn, midiNotes) {
+      let holdTimer = null;
+      let tapPending = false;
+      let holdCtl = null;
+      let holdPromise = null;
+      let down = false;
+      let capId = null;
+
+      const clearHoldTimer = () => {
+        if (holdTimer) {
+          clearTimeout(holdTimer);
+          holdTimer = null;
+        }
+      };
+
+      const onDown = (e) => {
+        if (e.button != null && e.button !== 0) return;
+        if (down) return;
+        down = true;
+        tapPending = true;
+        holdCtl = null;
+        holdPromise = null;
+        capId = e.pointerId;
+        try {
+          btn.setPointerCapture(e.pointerId);
+        } catch (_) {}
+        btn.classList.add("is-pressing");
+        clearHoldTimer();
+        getCtx();
+        const tonicPre =
+          (MAJOR_KEYS.find((kk) => kk.id === keySelect.value) || MAJOR_KEYS[0]).tonicMidi;
+        preloadPianoForTonic(tonicPre);
+        holdTimer = setTimeout(() => {
+          holdTimer = null;
+          tapPending = false;
+          holdPromise = playChordHold(midiNotes, { gainScale: 1 }).then((ctl) => {
+            holdPromise = null;
+            holdCtl = ctl;
+            if (!down) ctl.stop();
+          });
+        }, HOLD_ARM_MS);
+      };
+
+      const onUp = () => {
+        if (!down) return;
+        down = false;
+        btn.classList.remove("is-pressing");
+        clearHoldTimer();
+        if (tapPending) {
+          playChord(midiNotes, { durationSec: TAP_DURATION_SEC });
+        } else {
+          if (holdCtl) {
+            holdCtl.stop();
+            holdCtl = null;
+          } else if (holdPromise) {
+            holdPromise.then((ctl) => {
+              if (ctl) ctl.stop();
+            });
+          }
+        }
+        tapPending = false;
+        holdCtl = null;
+        holdPromise = null;
+        if (capId != null) {
+          try {
+            btn.releasePointerCapture(capId);
+          } catch (_) {}
+          capId = null;
+        }
+      };
+
+      btn.addEventListener("pointerdown", onDown);
+      btn.addEventListener("pointerup", onUp);
+      btn.addEventListener("pointercancel", onUp);
+      btn.addEventListener("lostpointercapture", onUp);
+    }
+
     function renderChords() {
       const key = MAJOR_KEYS.find((k) => k.id === keySelect.value) || MAJOR_KEYS[0];
       keyTitle.textContent = key.id;
-      const triads = diatonicTriadsFromTonic(key.tonicMidi);
+      keyTitle.classList.remove("is-bump");
+      void keyTitle.offsetWidth;
+      keyTitle.classList.add("is-bump");
+      const triads = voicedTriadsForKey(key.tonicMidi);
       grid.replaceChildren();
       key.labels.forEach((label, i) => {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.innerHTML = `${label}<span class="roman">${ROMAN[i]}</span>`;
-        btn.addEventListener("click", () => playChord(triads[i]));
+        btn.className = "chord-key";
+        btn.style.setProperty("--i", String(i));
+        const col = CHORD_ACCENTS[i] || CHORD_ACCENTS[CHORD_ACCENTS.length - 1];
+        btn.style.setProperty("--stripe", col.stripe);
+        btn.style.setProperty("--stripe-glow", col.glow);
+        const rom = ROMAN[i].split(/\s*[—–-]\s*/);
+        const romanLine =
+          rom.length >= 2
+            ? `<span class="roman-h">${rom[0]}</span> · ${rom[1]}`
+            : ROMAN[i];
+        btn.innerHTML = `
+          <span class="chord-key__name">${label}</span>
+          <div class="chord-key__deg">${romanLine}</div>
+        `;
+        bindChordPointer(btn, triads[i]);
         grid.appendChild(btn);
       });
+      preloadPianoForTonic(key.tonicMidi).catch(() => {});
     }
 
     keySelect.addEventListener("change", renderChords);
     renderChords();
+
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(() => {
+        const k = MAJOR_KEYS.find((x) => x.id === keySelect.value) || MAJOR_KEYS[0];
+        preloadPianoForTonic(k.tonicMidi);
+      });
+    } else {
+      setTimeout(() => {
+        const k = MAJOR_KEYS.find((x) => x.id === keySelect.value) || MAJOR_KEYS[0];
+        preloadPianoForTonic(k.tonicMidi);
+      }, 400);
+    }
   </script>
 </body>
 </html>
