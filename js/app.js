@@ -1,5 +1,7 @@
 import {
   ROMAN,
+  ROMAN_DEGREE_LABELS,
+  romanChordKind,
   MAJOR_KEYS,
   voicedTriadsForKey,
   findMajorKeyById,
@@ -14,6 +16,7 @@ import {
   playChordHold,
 } from "./audio-playback.js";
 import { buildPianoRow, syncPianoPickUi } from "./piano-keyboard.js";
+import { NOTATION_LS_KEY } from "./constants.js";
 import { loadCustomChordsFromStorage, persistCustomChords } from "./custom-chords.js";
 import { createChordPointerBinder } from "./chord-pointer.js";
 
@@ -55,6 +58,7 @@ function paintChordKey(btn, stripeIndex, animIndex) {
 
 const grid = document.getElementById("grid");
 const keySelect = document.getElementById("keySelect");
+const notationSelect = document.getElementById("notationSelect");
 const keyTitle = document.getElementById("keyTitle");
 const viewHome = document.getElementById("viewHome");
 const viewCustom = document.getElementById("viewCustom");
@@ -184,6 +188,30 @@ function renderCustomStrip() {
   });
 }
 
+function isMovableNotation() {
+  return notationSelect.value === "movable";
+}
+
+function chordCardLines(label, i) {
+  if (!isMovableNotation()) {
+    return {
+      primary: label,
+      romanHtml: formatRomanLineHtml(ROMAN[i]),
+      aria: `${label}，${ROMAN[i]}`,
+    };
+  }
+  const deg = ROMAN_DEGREE_LABELS[i];
+  const kind = romanChordKind(ROMAN[i]);
+  const romanHtml = kind
+    ? `<span class="roman-h">${escHtml(label)}</span> · ${escHtml(kind)}`
+    : escHtml(label);
+  return {
+    primary: deg,
+    romanHtml,
+    aria: `${deg}（${label}），${ROMAN[i]}`,
+  };
+}
+
 function renderChords() {
   const key = selectedKey();
   keyTitle.textContent = key.id;
@@ -192,15 +220,17 @@ function renderChords() {
   keyTitle.classList.add("is-bump");
   const triads = voicedTriadsForKey(key.tonicMidi);
   grid.replaceChildren();
+  grid.setAttribute("aria-label", isMovableNotation() ? "大调顺阶三和弦（首调显示）" : "大调顺阶三和弦（固定调显示）");
   key.labels.forEach((label, i) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "chord-key";
     paintChordKey(btn, i, i);
-    const romanLine = formatRomanLineHtml(ROMAN[i]);
+    const { primary, romanHtml, aria } = chordCardLines(label, i);
+    btn.setAttribute("aria-label", aria);
     btn.innerHTML = `
-          <span class="chord-key__label">${escHtml(label)}</span>
-          <div class="chord-key__roman">${romanLine}</div>
+          <span class="chord-key__label">${escHtml(primary)}</span>
+          <div class="chord-key__roman">${romanHtml}</div>
         `;
     bindChordPointer(btn, triads[i]);
     grid.appendChild(btn);
@@ -227,7 +257,18 @@ MAJOR_KEYS.forEach((k) => {
   keySelect.appendChild(opt);
 });
 
+try {
+  const saved = localStorage.getItem(NOTATION_LS_KEY);
+  if (saved === "movable" || saved === "fixed") notationSelect.value = saved;
+} catch (_) {}
+
 keySelect.addEventListener("change", renderChords);
+notationSelect.addEventListener("change", () => {
+  try {
+    localStorage.setItem(NOTATION_LS_KEY, notationSelect.value);
+  } catch (_) {}
+  renderChords();
+});
 renderChords();
 renderCustomStrip();
 

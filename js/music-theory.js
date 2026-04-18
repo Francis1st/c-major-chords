@@ -20,6 +20,15 @@ export const ROMAN = [
   "vii° — 减三",
 ];
 
+/** 首调式主行：罗马数字级数（不含「— 大三」等说明） */
+export const ROMAN_DEGREE_LABELS = ROMAN.map((r) => r.split(/\s*[—–-]\s*/)[0]);
+
+/** 罗马行里「—」后的结构名，如 大三、小三、减三 */
+export function romanChordKind(romanEntry) {
+  const parts = romanEntry.split(/\s*[—–-]\s*/);
+  return parts.length >= 2 ? parts[1].trim() : "";
+}
+
 /** 十二个大调：主音 MIDI（中央 C 附近）与顺阶三和弦标记 */
 export const MAJOR_KEYS = [
   { id: "C", tonicMidi: 60, labels: ["C", "Dm", "Em", "F", "G", "Am", "B°"] },
