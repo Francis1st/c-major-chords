@@ -272,14 +272,21 @@ select:focus-visible {
 @media (max-width: 520px) {
   .diatonic-stack__footer {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-end;
+    gap: 0.38rem;
+    padding-top: 0.42rem;
+    padding-bottom: 0.52rem;
+  }
+  .diatonic-stack__hint {
+    flex: 0 1 auto;
+    width: 100%;
+    max-width: none;
+    text-align: right;
+    font-size: 0.65625rem;
+    line-height: 1.38;
   }
   .root-boost {
     margin-left: 0;
-    align-self: flex-end;
-  }
-  .diatonic-stack__hint {
-    max-width: none;
   }
 }
 .chord-strip {
