@@ -111,17 +111,17 @@ export function playChordSynth(midiNotes, opts = {}) {
   });
 }
 
-/** 钢琴键点选试听：单音，时长与和弦短按一致（采样优先，失败时用合成器） */
+/** 钢琴键点选试听：与和弦短按同一套增益（首声部 0.62 系数），单音时长默认同短按 */
 export function playPianoKeyPreview(midi, opts = {}) {
   const durationSec = opts.durationSec ?? CHORD_TAP_DURATION_SEC;
-  const gainScale = opts.gainScale ?? 0.58;
+  const gainScale = opts.gainScale ?? 1;
   const ctx = getCtx();
   const destination = opts.destination || ctx.destination;
   const synthFallback = () =>
     playChordSynth([midi], {
       durationSec,
       destination,
-      gainScale: gainScale * 0.48,
+      gainScale,
     });
 
   whenReadyAndSamples(ctx, [midi])
@@ -136,13 +136,14 @@ export function playPianoKeyPreview(midi, opts = {}) {
       master.connect(destination);
       const now = ctx.currentTime + 0.003;
       const attack = 0.008;
-      const peak = 0.58 * gainScale * PIANO_LEVEL;
+      const peak = 0.62 * gainScale * PIANO_LEVEL;
       master.gain.setValueAtTime(0, now);
       master.gain.linearRampToValueAtTime(peak, now + attack);
       master.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
       const { src, buf } = ps;
       const vg = ctx.createGain();
-      vg.gain.value = 0.56 * gainScale * PIANO_LEVEL;
+      /* 与 playChord 第一声部 (i=0) 一致：0.62 - i * 0.045 */
+      vg.gain.value = 0.62 * gainScale * PIANO_LEVEL;
       src.connect(vg);
       vg.connect(master);
       const bufSec = buf.duration / src.playbackRate.value;
