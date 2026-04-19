@@ -31,7 +31,11 @@ export function loadPianoBuffer(ctx, baseMidi) {
     return pianoLoadPromises.get(baseMidi);
   }
   const url = PIANO_BASE + pianoSampleFilename(baseMidi);
-  const p = fetch(url)
+  const p = fetch(url, {
+    mode: "cors",
+    cache: "force-cache",
+    priority: "high",
+  })
     .then((res) => {
       if (!res.ok) throw new Error(`${res.status} ${url}`);
       return res.arrayBuffer();
@@ -52,4 +56,11 @@ export function loadPianoBuffer(ctx, baseMidi) {
 
 export function chordSampleBases(midiNotes) {
   return [...new Set(midiNotes.map(nearestPianoSampleMidi))];
+}
+
+/** 并行拉取并解码上述 MIDI 所需的全部采样轨 */
+export function preloadPianoBasesForMidis(ctx, midis) {
+  const bases = chordSampleBases(midis);
+  if (bases.length === 0) return Promise.resolve();
+  return Promise.all(bases.map((b) => loadPianoBuffer(ctx, b)));
 }

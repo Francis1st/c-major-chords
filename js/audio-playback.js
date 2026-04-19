@@ -1,9 +1,9 @@
-import { midiToHz, voicedTriadsForKey } from "./music-theory.js";
+import { midiToHz, voicedTriadsForKey, diatonicChordRootMidi } from "./music-theory.js";
 import {
   loadPianoBuffer,
-  chordSampleBases,
   nearestPianoSampleMidi,
   getPianoBuffer,
+  preloadPianoBasesForMidis,
 } from "./piano-samples.js";
 import { CHORD_TAP_DURATION_SEC } from "./constants.js";
 
@@ -26,21 +26,19 @@ export function whenContextReady(ctx) {
   return ctx.resume().catch(() => {});
 }
 
-export function collectSampleBasesForTonic(tonicMidi) {
-  return chordSampleBases(voicedTriadsForKey(tonicMidi).flat());
-}
-
+/** 顺阶三和弦 + 各级根音低八度叠奏可能用到的轨，减少首点等待 */
 export function preloadPianoForTonic(tonicMidi) {
   const ctx = getCtx();
-  const bases = collectSampleBasesForTonic(tonicMidi);
-  return Promise.all(bases.map((b) => loadPianoBuffer(ctx, b))).catch(() => {});
+  const midis = voicedTriadsForKey(tonicMidi).flat();
+  for (let i = 0; i < 7; i++) {
+    const r = diatonicChordRootMidi(tonicMidi, i);
+    midis.push(r - 24, r - 12);
+  }
+  return preloadPianoBasesForMidis(ctx, midis).catch(() => {});
 }
 
 function whenReadyAndSamples(ctx, midiNotes) {
-  return Promise.all([
-    whenContextReady(ctx),
-    ...chordSampleBases(midiNotes).map((b) => loadPianoBuffer(ctx, b)),
-  ]);
+  return Promise.all([whenContextReady(ctx), preloadPianoBasesForMidis(ctx, midiNotes)]);
 }
 
 function playbackRateSemi(midi, baseMidi) {
@@ -136,7 +134,7 @@ export function playPianoKeyPreview(midi, opts = {}) {
       const master = ctx.createGain();
       master.gain.value = 0;
       master.connect(destination);
-      const now = ctx.currentTime + 0.008;
+      const now = ctx.currentTime + 0.003;
       const attack = 0.008;
       const peak = 0.58 * gainScale * PIANO_LEVEL;
       master.gain.setValueAtTime(0, now);
@@ -169,7 +167,7 @@ export function playChord(midiNotes, opts = {}) {
       master.gain.value = 0;
       master.connect(destination || ctx.destination);
 
-      const now = ctx.currentTime + 0.008;
+      const now = ctx.currentTime + 0.003;
       const attack = 0.008;
       const peak = 0.62 * gainScale * PIANO_LEVEL;
 
@@ -255,9 +253,10 @@ export function playChordHold(midiNotes, opts = {}) {
       const master = ctx.createGain();
       master.gain.value = 0;
       master.connect(destination);
-      const now = ctx.currentTime + 0.008;
+      const now = ctx.currentTime + 0.002;
       const peak = 0.55 * gainScale * PIANO_LEVEL;
-      master.gain.linearRampToValueAtTime(peak, now + 0.014);
+      /* 长按要「跟手」起声，包络比短按更陡，避免像慢半拍 */
+      master.gain.linearRampToValueAtTime(peak, now + 0.006);
       const sources = [];
       midiNotes.forEach((midi, i) => {
         const ps = createPianoSource(ctx, midi);

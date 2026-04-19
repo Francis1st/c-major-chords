@@ -8,7 +8,7 @@ import {
   findMajorKeyById,
   midiToNoteLabel,
 } from "./music-theory.js";
-import { loadPianoBuffer, chordSampleBases, nearestPianoSampleMidi } from "./piano-samples.js";
+import { preloadPianoBasesForMidis } from "./piano-samples.js";
 import {
   getCtx,
   whenContextReady,
@@ -94,10 +94,7 @@ function warmupChordSamples(midiNotes, chordRootMidi) {
   const midis = chordPlaybackMidis(midiNotes, chordRootMidi);
   const ctx = getCtx();
   void whenContextReady(ctx);
-  void preloadPianoForTonic(selectedKey().tonicMidi);
-  chordSampleBases(midis).forEach((b) => {
-    void loadPianoBuffer(ctx, b);
-  });
+  void preloadPianoBasesForMidis(ctx, midis);
 }
 
 const withRootBoost = (fn) => (midis, opts) =>
@@ -260,15 +257,15 @@ function renderChords() {
 }
 
 function preloadIdle() {
-  preloadPianoForTonic(selectedKey().tonicMidi);
+  void preloadPianoForTonic(selectedKey().tonicMidi);
   const ctx = getCtx();
-  const bases = new Set();
+  const midis = [];
   customChords.forEach((c) => {
-    c.midis.forEach((m) => bases.add(nearestPianoSampleMidi(m)));
+    c.midis.forEach((m) => midis.push(m));
+    const r = Math.min(...c.midis);
+    midis.push(r - 24, r - 12);
   });
-  bases.forEach((b) => {
-    void loadPianoBuffer(ctx, b);
-  });
+  void preloadPianoBasesForMidis(ctx, midis).catch(() => {});
 }
 
 MAJOR_KEYS.forEach((k) => {
@@ -306,6 +303,14 @@ btnAddChord.addEventListener("click", openCustomEditor);
 btnCustomBack.addEventListener("click", closeCustomEditor);
 btnSaveCustom.addEventListener("click", saveCustomFromEditor);
 customNameInput.addEventListener("input", updateCustomSaveUi);
+
+document.querySelector(".shell")?.addEventListener(
+  "pointerdown",
+  () => {
+    void whenContextReady(getCtx());
+  },
+  { once: true, passive: true }
+);
 
 if (typeof requestIdleCallback !== "undefined") requestIdleCallback(preloadIdle);
 else setTimeout(preloadIdle, 400);
