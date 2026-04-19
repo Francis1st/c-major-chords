@@ -5,6 +5,7 @@ import {
   nearestPianoSampleMidi,
   getPianoBuffer,
 } from "./piano-samples.js";
+import { CHORD_TAP_DURATION_SEC } from "./constants.js";
 
 /** 钢琴输出总增益（易偏小，与合成器分开调） */
 export const PIANO_LEVEL = 1.48;
@@ -110,6 +111,48 @@ export function playChordSynth(midiNotes, opts = {}) {
 
     disconnectGainLater(master, (durationSec + 0.2) * 1000);
   });
+}
+
+/** 钢琴键点选试听：单音，时长与和弦短按一致（采样优先，失败时用合成器） */
+export function playPianoKeyPreview(midi, opts = {}) {
+  const durationSec = opts.durationSec ?? CHORD_TAP_DURATION_SEC;
+  const gainScale = opts.gainScale ?? 0.58;
+  const ctx = getCtx();
+  const destination = opts.destination || ctx.destination;
+  const synthFallback = () =>
+    playChordSynth([midi], {
+      durationSec,
+      destination,
+      gainScale: gainScale * 0.48,
+    });
+
+  whenReadyAndSamples(ctx, [midi])
+    .then(() => {
+      const ps = createPianoSource(ctx, midi);
+      if (!ps) {
+        synthFallback();
+        return;
+      }
+      const master = ctx.createGain();
+      master.gain.value = 0;
+      master.connect(destination);
+      const now = ctx.currentTime + 0.008;
+      const attack = 0.008;
+      const peak = 0.58 * gainScale * PIANO_LEVEL;
+      master.gain.setValueAtTime(0, now);
+      master.gain.linearRampToValueAtTime(peak, now + attack);
+      master.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+      const { src, buf } = ps;
+      const vg = ctx.createGain();
+      vg.gain.value = 0.56 * gainScale * PIANO_LEVEL;
+      src.connect(vg);
+      vg.connect(master);
+      const bufSec = buf.duration / src.playbackRate.value;
+      src.start(now);
+      src.stop(now + Math.min(bufSec, durationSec + 0.25));
+      disconnectGainLater(master, (durationSec + 0.45) * 1000);
+    })
+    .catch(synthFallback);
 }
 
 export function playChord(midiNotes, opts = {}) {

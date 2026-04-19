@@ -1,13 +1,13 @@
-/** 和弦按钮：短按播一次 / 长按持续（由上层提供 warmup + 播放） */
-export function createChordPointerBinder({ playChord, playChordHold, warmupChord }) {
-  const TAP_DURATION_SEC = 2.65;
-  const HOLD_ARM_MS = 210;
+import { CHORD_TAP_DURATION_SEC } from "./constants.js";
 
+/** 和弦按钮：短按一次 / 长按持续 */
+export function createChordPointerBinder({ playChord, playChordHold, warmupChord }) {
+  const HOLD_ARM_MS = 210;
   const safeStopHold = (ctl) => {
     if (ctl && typeof ctl.stop === "function") ctl.stop();
   };
 
-  return function bindChordPointer(btn, midiNotes) {
+  return function bindChordPointer(btn, midiNotes, { chordRootMidi } = {}) {
     let holdTimer = null;
     let tapPending = false;
     let holdCtl = null;
@@ -35,11 +35,11 @@ export function createChordPointerBinder({ playChord, playChordHold, warmupChord
       } catch (_) {}
       btn.classList.add("is-pressing");
       clearHoldTimer();
-      warmupChord(midiNotes);
+      warmupChord(midiNotes, chordRootMidi);
       holdTimer = setTimeout(() => {
         holdTimer = null;
         tapPending = false;
-        holdPromise = playChordHold(midiNotes, { gainScale: 1 }).then((ctl) => {
+        holdPromise = playChordHold(midiNotes, { gainScale: 1, chordRootMidi }).then((ctl) => {
           holdPromise = null;
           holdCtl = ctl;
           if (!down) safeStopHold(ctl);
@@ -53,7 +53,7 @@ export function createChordPointerBinder({ playChord, playChordHold, warmupChord
       btn.classList.remove("is-pressing");
       clearHoldTimer();
       if (tapPending) {
-        playChord(midiNotes, { durationSec: TAP_DURATION_SEC });
+        playChord(midiNotes, { durationSec: CHORD_TAP_DURATION_SEC, chordRootMidi });
       } else if (holdCtl) {
         safeStopHold(holdCtl);
         holdCtl = null;

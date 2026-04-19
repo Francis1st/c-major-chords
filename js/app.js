@@ -4,6 +4,7 @@ import {
   romanChordKind,
   MAJOR_KEYS,
   voicedTriadsForKey,
+  diatonicChordRootMidi,
   findMajorKeyById,
   midiToNoteLabel,
 } from "./music-theory.js";
@@ -14,13 +15,12 @@ import {
   preloadPianoForTonic,
   playChord,
   playChordHold,
+  playPianoKeyPreview,
 } from "./audio-playback.js";
 import { buildPianoRow, syncPianoPickUi } from "./piano-keyboard.js";
-import { NOTATION_LS_KEY } from "./constants.js";
+import { NOTATION_LS_KEY, ROOT_BOOST_LS_KEY } from "./constants.js";
 import { loadCustomChordsFromStorage, persistCustomChords } from "./custom-chords.js";
 import { createChordPointerBinder } from "./chord-pointer.js";
-
-/* —— 和弦卡片展示（体量小，与入口同文件，避免多一层模块） —— */
 
 function escHtml(s) {
   return String(s)
@@ -54,11 +54,10 @@ function paintChordKey(btn, stripeIndex, animIndex) {
   btn.style.setProperty("--stripe-glow", col.glow);
 }
 
-/* —— DOM —— */
-
 const grid = document.getElementById("grid");
 const keySelect = document.getElementById("keySelect");
 const notationSelect = document.getElementById("notationSelect");
+const rootBoost = document.getElementById("rootBoost");
 const keyTitle = document.getElementById("keyTitle");
 const viewHome = document.getElementById("viewHome");
 const viewCustom = document.getElementById("viewCustom");
@@ -77,18 +76,36 @@ function selectedKey() {
   return findMajorKeyById(keySelect.value);
 }
 
-function warmupChordSamples(midiNotes) {
+function stripChordPointerOpts(opts) {
+  if (!opts?.chordRootMidi) return opts || {};
+  const rest = { ...opts };
+  delete rest.chordRootMidi;
+  return rest;
+}
+
+/** 根音开启时：根音低两个八度 + 原和弦 MIDI，去重、低音在前 */
+function chordPlaybackMidis(triadMidis, chordRootMidi) {
+  if (!rootBoost.checked) return triadMidis;
+  const t = chordRootMidi ?? Math.min(...triadMidis);
+  return [...new Set([t - 24, t - 12, ...triadMidis])];
+}
+
+function warmupChordSamples(midiNotes, chordRootMidi) {
+  const midis = chordPlaybackMidis(midiNotes, chordRootMidi);
   const ctx = getCtx();
   void whenContextReady(ctx);
   void preloadPianoForTonic(selectedKey().tonicMidi);
-  chordSampleBases(midiNotes).forEach((b) => {
+  chordSampleBases(midis).forEach((b) => {
     void loadPianoBuffer(ctx, b);
   });
 }
 
+const withRootBoost = (fn) => (midis, opts) =>
+  fn(chordPlaybackMidis(midis, opts?.chordRootMidi), stripChordPointerOpts(opts));
+
 const bindChordPointer = createChordPointerBinder({
-  playChord,
-  playChordHold,
+  playChord: withRootBoost(playChord),
+  playChordHold: withRootBoost(playChordHold),
   warmupChord: warmupChordSamples,
 });
 
@@ -99,8 +116,12 @@ function setViews(isEditor) {
 }
 
 function onPianoMidiToggle(midi) {
-  if (editorSelectedMidis.has(midi)) editorSelectedMidis.delete(midi);
-  else editorSelectedMidis.add(midi);
+  if (editorSelectedMidis.has(midi)) {
+    editorSelectedMidis.delete(midi);
+  } else {
+    editorSelectedMidis.add(midi);
+    void playPianoKeyPreview(midi);
+  }
   syncPianoPickUi(pianoRow, editorSelectedMidis);
   updateCustomSaveUi();
 }
@@ -169,7 +190,7 @@ function renderCustomStrip() {
           <span class="chord-key__label">${escHtml(item.name)}</span>
           <div class="chord-key__roman"><span class="roman-h">${item.midis.length}</span> 音 · ${escHtml(sub)}</div>
         `;
-    bindChordPointer(btn, item.midis);
+    bindChordPointer(btn, item.midis, { chordRootMidi: Math.min(...item.midis) });
     const del = document.createElement("button");
     del.type = "button";
     del.className = "chord-key-del";
@@ -232,7 +253,7 @@ function renderChords() {
           <span class="chord-key__label">${escHtml(primary)}</span>
           <div class="chord-key__roman">${romanHtml}</div>
         `;
-    bindChordPointer(btn, triads[i]);
+    bindChordPointer(btn, triads[i], { chordRootMidi: diatonicChordRootMidi(key.tonicMidi, i) });
     grid.appendChild(btn);
   });
   preloadPianoForTonic(key.tonicMidi).catch(() => {});
@@ -262,12 +283,21 @@ try {
   if (saved === "movable" || saved === "fixed") notationSelect.value = saved;
 } catch (_) {}
 
+try {
+  rootBoost.checked = localStorage.getItem(ROOT_BOOST_LS_KEY) === "1";
+} catch (_) {}
+
 keySelect.addEventListener("change", renderChords);
 notationSelect.addEventListener("change", () => {
   try {
     localStorage.setItem(NOTATION_LS_KEY, notationSelect.value);
   } catch (_) {}
   renderChords();
+});
+rootBoost.addEventListener("change", () => {
+  try {
+    localStorage.setItem(ROOT_BOOST_LS_KEY, rootBoost.checked ? "1" : "0");
+  } catch (_) {}
 });
 renderChords();
 renderCustomStrip();

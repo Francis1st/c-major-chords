@@ -94,6 +94,13 @@ export function voicedTriadsForKey(tonicMidi) {
   });
 }
 
+/** 大调顺阶 I–vii°：相对主音的根音半音偏移（与就近排声里「最低音」可能不一致） */
+export const MAJOR_DEGREE_ROOT_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
+
+export function diatonicChordRootMidi(tonicMidi, degreeIndex) {
+  return tonicMidi + MAJOR_DEGREE_ROOT_SEMITONES[degreeIndex % 7];
+}
+
 export function findMajorKeyById(id) {
   return MAJOR_KEYS.find((k) => k.id === id) || MAJOR_KEYS[0];
 }

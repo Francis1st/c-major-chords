@@ -31,7 +31,20 @@
           </div>
         </div>
       </header>
-      <div class="chord-strip" id="grid" role="group" aria-label="大调顺阶三和弦"></div>
+      <section class="diatonic-stack">
+        <div class="chord-strip" id="grid" role="group" aria-label="大调顺阶三和弦"></div>
+        <div class="diatonic-stack__footer">
+          <p class="diatonic-stack__hint">叠奏根音低八度，听感更厚；含自定义和弦。</p>
+          <label class="root-boost">
+            <input type="checkbox" id="rootBoost" class="root-boost__input" />
+            <span class="root-boost__label">根音增强</span>
+            <span class="root-boost__ui" aria-hidden="true">
+              <span class="root-boost__track"></span>
+              <span class="root-boost__thumb"></span>
+            </span>
+          </label>
+        </div>
+      </section>
       <div class="custom-row-wrap">
         <div class="custom-row-header">
           <span class="custom-row-label">自定义和弦</span>
